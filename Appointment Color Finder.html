@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Appointment Color Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fff6f1; --card: #ffffff; --ink: #3b2a3a; --muted: #85727f;
+    --line: #f1ddd5; --accent: #ff7a9a; --mark: #ffe58a;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #231a26; --card: #31253a; --ink: #fbeef3; --muted: #c4aebf;
+      --line: #46354f; --accent: #ff8fab; --mark: #7a5f12;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #231a26; --card: #31253a; --ink: #fbeef3; --muted: #c4aebf;
+    --line: #46354f; --accent: #ff8fab; --mark: #7a5f12;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px; line-height: 1.45; min-height: 100vh;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 22px 14px 40px; }
+  h1 { font-family: 'Fredoka', 'Nunito', sans-serif; font-size: 22px; font-weight: 600; margin: 0; text-align: center; }
+  .sub { text-align: center; color: var(--muted); font-size: 13px; margin: 2px 0 14px; }
+  .eye {
+    width: 44px; height: 44px; margin: 0 auto 6px; border-radius: 50%; background: var(--card);
+    border: 2px solid var(--ink); display: grid; place-items: center;
+  }
+  .iris {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--ink);
+    background: radial-gradient(circle at 35% 35%, #fff 0 2px, transparent 3px), #709bdd;
+    transition: transform .15s ease-out;
+  }
+
+  .search { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; padding: 6px 0 10px; background: var(--bg); }
+  .field {
+    display: flex; align-items: center; gap: 8px; background: var(--card);
+    border: 2px solid var(--ink); border-radius: 999px; padding: 3px 6px 3px 14px;
+  }
+  .field:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .field svg { flex: none; color: var(--muted); }
+  input[type="search"] {
+    flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink);
+    font: inherit; font-size: 16px; padding: 8px 0; outline: none; -webkit-appearance: none; appearance: none;
+  }
+  input[type="search"]::-webkit-search-cancel-button { display: none; }
+  .clear {
+    border: 0; background: var(--line); color: var(--ink); width: 26px; height: 26px;
+    border-radius: 50%; font-size: 15px; line-height: 1; cursor: pointer; display: none;
+  }
+  .clear.on { display: block; }
+  .clear:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .status { margin: 4px 2px 10px; font-weight: 700; font-size: 14px; }
+
+  .list { display: grid; gap: 8px; }
+  .spot {
+    display: flex; align-items: center; gap: 12px; background: var(--card);
+    border: 2px solid var(--ink); border-radius: 16px; padding: 8px 12px 8px 8px;
+  }
+  .dot {
+    flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center;
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 16px;
+  }
+  .info { min-width: 0; }
+  .name { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+  .types { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px; }
+  .types li { font-size: 12px; color: var(--muted); }
+  .types li:not(:last-child)::after { content: ","; }
+  .types li.hit { color: var(--ink); font-weight: 700; background: var(--mark); border-radius: 6px; padding: 0 4px; }
+  .types li.hit::after { content: ""; }
+  .empty { text-align: center; padding: 22px 8px; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { .iris { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eye" aria-hidden="true"><div class="iris" id="iris"></div></div>
+  <h1>Appointment colors</h1>
+  <p class="sub">Search an appointment to see its color spot.</p>
+
+  <div class="search">
+    <label class="field">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="e.g. post ops" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search appointment types">
+      <button class="clear" id="clear" type="button" aria-label="Clear search">&times;</button>
+    </label>
+  </div>
+
+  <div class="status" id="status" aria-live="polite"></div>
+  <div class="list" id="list"></div>
+</div>
+
+<script>
+  // Exact colors from Appointment_Colors.xlsx
+  const SPOTS = [
+    { n: 1,  name: 'Light yellow', hex: '#FFFFA6', types: ['Dilation', 'Medical Eye Exam', 'New Medical Eye Exam'] },
+    { n: 2,  name: 'Orange', hex: '#FFA953', types: ['Brief Follow Up', 'Post Ops', 'Contact Lens Check', 'IOP Check', 'Refraction', 'RX Check'] },
+    { n: 3,  name: 'Light green', hex: '#CFEF85', types: ['Brief Follow Up', 'Post Ops', 'Contact Lens Check', 'Procedure', 'IOP Check', 'Refraction', 'RX Check'] },
+    { n: 4,  name: 'Pink', hex: '#FF80FF', types: ['Cataract Evaluation', 'YAG Evaluation'] },
+    { n: 5,  name: 'Hot pink', hex: '#FF0080', types: ['Cataract Evaluation'] },
+    { n: 6,  name: 'Light blue', hex: '#A6BBEF', types: ['Post Ops'] },
+    { n: 7,  name: 'Salmon', hex: '#FF8080', types: ['Dilation', 'Glaucoma Evaluation', 'Medical Eye Exam'] },
+    { n: 8,  name: 'Ocean blue', hex: '#2C97AD', types: ['Retina Evaluation'] },
+    { n: 9,  name: 'Olive', hex: '#808000', types: ['Retina Injections'] },
+    { n: 10, name: 'Red', hex: '#FF0000', types: ['Emergency'] },
+    { n: 11, name: 'Maroon', hex: '#800000', types: ['Dry Eye Evaluation'] },
+    { n: 12, name: 'Purple', hex: '#8000FF', types: ['Post Ops'] },
+    { n: 13, name: 'Teal', hex: '#408080', types: ['Testing Cataract (ASCAN/Biometry)'] },
+    { n: 14, name: 'Dark green', hex: '#006A00', types: ['Visual Field'] }
+  ];
+
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const stem = w => w.replace(/s$/, '');
+  const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function textOn(hex) {
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+    return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#2a1f2a' : '#ffffff';
+  }
+  function typeMatches(type, query) {
+    const full = norm(type), parts = full.split(' ').map(stem);
+    return norm(query).split(' ').filter(Boolean).every(w => full.includes(w) || parts.some(x => x.startsWith(stem(w))));
+  }
+
+  function row(s, query) {
+    const lis = s.types.map(t => `<li class="${query && typeMatches(t, query) ? 'hit' : ''}">${esc(t)}</li>`).join('');
+    return `<div class="spot">
+      <div class="dot" style="background:${s.hex};color:${textOn(s.hex)}">${s.n}</div>
+      <div class="info"><div class="name">${s.name}</div><ul class="types">${lis}</ul></div>
+    </div>`;
+  }
+
+  const $q = document.getElementById('q'), $list = document.getElementById('list'),
+        $status = document.getElementById('status'), $clear = document.getElementById('clear');
+
+  function render() {
+    const query = $q.value.trim();
+    $clear.classList.toggle('on', !!query);
+    if (!query) { $status.textContent = ''; $list.innerHTML = SPOTS.map(s => row(s, '')).join(''); return; }
+    const res = SPOTS.filter(s => s.types.some(t => typeMatches(t, query)) || norm(s.name).includes(norm(query)));
+    if (!res.length) { $status.textContent = ''; $list.innerHTML = `<div class="empty">No match for &ldquo;${esc(query)}&rdquo;. Check the spelling.</div>`; return; }
+    $status.textContent = res.length === 1 ? `Spot ${res[0].n}: ${res[0].name}` : `${res.length} spots: ${res.map(s => s.n).join(', ')}`;
+    $list.innerHTML = res.map(s => row(s, query)).join('');
+  }
+
+  $q.addEventListener('input', render);
+  $clear.addEventListener('click', () => { $q.value = ''; render(); $q.focus(); });
+  const iris = document.getElementById('iris');
+  window.addEventListener('pointermove', e => {
+    iris.style.transform = `translate(${(e.clientX / innerWidth - .5) * 8}px, ${(e.clientY / innerHeight - .5) * 6}px)`;
+  });
+  render();
+</script>
+</body>
+</html>
